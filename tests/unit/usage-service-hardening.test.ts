@@ -19,7 +19,7 @@ test.afterEach(() => {
     process.env.ANTIGRAVITY_CREDITS = originalCreditsMode;
   }
 });
-
+// Internal upstream entries are excluded from client-visible quota rows.
 test("usage service covers GitHub free-plan parsing, auth denial and unsupported providers", async () => {
   // Free-plan fixture aligned with the upstream protocol (#2876): in
   // `copilot_internal/user`, `limited_user_quotas[name]` is the REMAINING
@@ -340,8 +340,11 @@ test("usage service covers Antigravity quota parsing, exclusions and forbidden a
   });
 
   assert.equal(usage.plan, "Ultra");
-  // claude-sonnet-4-6 was removed from ANTIGRAVITY_PUBLIC_MODELS in May 2026 (deprecated)
-  assert.deepEqual(Object.keys(usage.quotas).sort(), ["gemini-pro-agent"]);
+  // Internal models are excluded from client-facing usage quotas.
+  assert.deepEqual(Object.keys(usage.quotas).sort(), [
+    "claude-sonnet-4-6",
+    "gemini-pro-agent",
+  ]);
   assert.equal(usage.quotas["gemini-pro-agent"].total, 0);
   assert.equal(usage.quotas["gemini-pro-agent"].remainingPercentage, 100);
   const loadCodeAssistCall = calls.find((call) => call.url.includes("loadCodeAssist"));

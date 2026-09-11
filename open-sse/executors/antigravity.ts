@@ -32,7 +32,11 @@ import { persistCreditBalance, getAllPersistedCreditBalances } from "@/lib/db/cr
 import { obfuscateSensitiveWords } from "../services/antigravityObfuscation.ts";
 import { resolveAntigravityVersion } from "../services/antigravityVersion.ts";
 import { ensureAntigravityProjectAssigned } from "../services/antigravityProjectBootstrap.ts";
-import { resolveAntigravityModelId } from "../config/antigravityModelAliases.ts";
+import {
+  getAntigravityModelThinkingLevel,
+  resolveAntigravityModelId,
+  type AntigravityThinkingLevel,
+} from "../config/antigravityModelAliases.ts";
 import { cloakAntigravityToolPayload } from "../config/toolCloaking.ts";
 import {
   shouldStripCloudCodeThinking,
@@ -418,6 +422,23 @@ function applyAntigravityGenerationDefaults(request: Record<string, unknown>): v
   request.generationConfig = generationConfig;
 }
 
+function applyAntigravityModelThinkingLevel(
+  request: Record<string, unknown>,
+  thinkingLevel: AntigravityThinkingLevel | null
+): void {
+  if (!thinkingLevel) return;
+
+  const generationConfig = asRecord(request.generationConfig) ?? {};
+  const thinkingConfig = asRecord(generationConfig.thinkingConfig) ?? {};
+  delete thinkingConfig.thinkingBudget;
+  generationConfig.thinkingConfig = {
+    ...thinkingConfig,
+    thinkingLevel,
+    includeThoughts: true,
+  };
+  request.generationConfig = generationConfig;
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -566,6 +587,7 @@ export class AntigravityExecutor extends BaseExecutor {
     }
 
     const upstreamModel = cleanModelName(model);
+    const modelThinkingLevel = getAntigravityModelThinkingLevel(model);
     const isClaude = upstreamModel.toLowerCase().includes("claude");
     const baseBody = bodyRecord;
     const normalizedBody = shouldStripCloudCodeThinking(this.provider, upstreamModel)
@@ -640,6 +662,7 @@ export class AntigravityExecutor extends BaseExecutor {
       }
     }
 
+    applyAntigravityModelThinkingLevel(transformedRequest, modelThinkingLevel);
     applyAntigravityGenerationDefaults(transformedRequest);
 
     const {

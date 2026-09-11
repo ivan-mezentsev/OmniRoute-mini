@@ -34,8 +34,7 @@ function buildCapability(overrides = {}) {
   };
 }
 
-function resetStorage() {
-  core.resetDbInstance();
+function resetStorage(): void {
   fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true });
   fs.mkdirSync(TEST_DATA_DIR, { recursive: true });
 }
@@ -68,9 +67,7 @@ test("canonical model capability resolver lets exact synced metadata override gl
       }),
     },
     antigravity: {
-      // The resolver returns "gemini-3.1-pro-high" unchanged (ANTIGRAVITY_MODEL_ALIASES only maps
-      // the public-facing alias → internal, not the reverse). Save under the canonical resolved key.
-      "gemini-3.1-pro-high": buildCapability({
+      "gemini-pro-agent": buildCapability({
         tool_call: false,
         reasoning: false,
         modalities_input: JSON.stringify(["text"]),

@@ -7,16 +7,7 @@ import { MODEL_SPECS, getModelSpec, type ModelSpec } from "@/shared/constants/mo
 import { getSyncedCapability } from "@/lib/modelsDevSync";
 
 const TOOL_CALLING_UNSUPPORTED_PATTERNS: string[] = [];
-const REASONING_UNSUPPORTED_PATTERNS = [
-  "antigravity/claude-sonnet-4-6",
-  "antigravity/claude-sonnet-4-5",
-  "antigravity/claude-sonnet-4",
-  // Non-Claude antigravity models don't support thinking params (#1361)
-  "antigravity/gemini-",
-  "antigravity/gpt-oss-",
-  "antigravity/gemini-3",
-  "antigravity/tab_",
-];
+const REASONING_UNSUPPORTED_PATTERNS: string[] = [];
 
 const MAX_TOKENS_UNSUPPORTED_PATTERNS = [
   "o1-preview",
