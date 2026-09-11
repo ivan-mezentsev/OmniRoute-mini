@@ -115,7 +115,11 @@ test("Grok reset-credit connection service lists, redeems and refreshes persiste
   assert.equal(listed.availableCount, 1);
   assert.equal(listed.credits[0]?.selectionToken, "reset-0");
 
-  const result = await resetCredits.redeemResetCredit(connection.id, "reset-0");
+  const result = await resetCredits.redeemResetCredit(
+    connection.id,
+    "reset-0",
+    "grok-test-request"
+  );
   assert.equal(result.outcome, "reset");
   assert.equal(result.usage.bankedResetCredits, 0);
   assert.equal(providerLimits.getProviderLimitsCache(connection.id)?.bankedResetCredits, 0);

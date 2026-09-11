@@ -1,4 +1,5 @@
 import { getProviderConnectionById } from "@/lib/db/providers";
+import { resolveProxyForConnection } from "@/lib/db/settings";
 import {
   fetchAndPersistProviderLimits,
   refreshAndUpdateCredentials,
@@ -9,7 +10,14 @@ import {
   ResetCreditError,
   type PublicResetCredit,
 } from "@omniroute/open-sse/services/grokResetCredits.ts";
+import {
+  CodexResetCreditError,
+  listCodexResetCredits,
+  redeemCodexResetCredit,
+} from "@omniroute/open-sse/services/codexResetCredits.ts";
+import { invalidateCodexQuotaCache } from "@omniroute/open-sse/services/codexQuotaFetcher.ts";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
+import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
 
 type JsonRecord = Record<string, unknown>;
 type ResetOutcome = "reset" | "alreadyRedeemed";
@@ -19,20 +27,50 @@ interface ResetCreditConnection extends JsonRecord {
   provider: string;
   authType?: string;
   accessToken?: string;
+  providerSpecificData?: JsonRecord;
 }
 
 interface ResetCreditAdapter {
-  list: (accessToken: string) => Promise<{
+  list: (connection: ResetCreditConnection) => Promise<{
     credits: PublicResetCredit[];
     availableCount: number;
   }>;
-  redeem: (accessToken: string, selectionToken: string) => Promise<ResetOutcome>;
+  redeem: (
+    connection: ResetCreditConnection,
+    selectionToken: string,
+    idempotencyKey: string
+  ) => Promise<ResetOutcome>;
+  invalidate?: (connectionId: string) => void;
 }
 
 const RESET_CREDIT_ADAPTERS: Record<string, ResetCreditAdapter> = {
   "grok-cli": {
-    list: listGrokResetCredits,
-    redeem: redeemGrokResetCredit,
+    list: (connection) => listGrokResetCredits(accessToken(connection)),
+    redeem: (connection, selectionToken) =>
+      redeemGrokResetCredit(accessToken(connection), selectionToken),
+  },
+  codex: {
+    list: (connection) =>
+      listCodexResetCredits({
+        accessToken: accessToken(connection),
+        workspaceId:
+          typeof connection.providerSpecificData?.workspaceId === "string"
+            ? connection.providerSpecificData.workspaceId
+            : null,
+      }),
+    redeem: (connection, selectionToken, idempotencyKey) =>
+      redeemCodexResetCredit(
+        {
+          accessToken: accessToken(connection),
+          workspaceId:
+            typeof connection.providerSpecificData?.workspaceId === "string"
+              ? connection.providerSpecificData.workspaceId
+              : null,
+        },
+        selectionToken,
+        idempotencyKey
+      ),
+    invalidate: invalidateCodexQuotaCache,
   },
 };
 
@@ -68,6 +106,11 @@ async function loadConnection(connectionId: string): Promise<{
   }
 }
 
+async function withConnectionProxy<T>(connectionId: string, operation: () => Promise<T>) {
+  const proxyInfo = await resolveProxyForConnection(connectionId);
+  return runWithProxyContext(proxyInfo?.proxy ?? null, operation);
+}
+
 function accessToken(connection: ResetCreditConnection): string {
   const token = typeof connection.accessToken === "string" ? connection.accessToken.trim() : "";
   if (!token) {
@@ -78,14 +121,54 @@ function accessToken(connection: ResetCreditConnection): string {
 
 export async function listResetCredits(connectionId: string) {
   const { connection, adapter } = await loadConnection(connectionId);
-  return adapter.list(accessToken(connection));
+  try {
+    return await withConnectionProxy(connectionId, () => adapter.list(connection));
+  } catch (error) {
+    if (error instanceof ResetCreditError) throw error;
+    if (error instanceof CodexResetCreditError) {
+      throw new ResetCreditError(error.status, error.code, error.message);
+    }
+    throw error;
+  }
 }
 
-export async function redeemResetCredit(connectionId: string, selectionToken: string) {
+export async function redeemResetCredit(
+  connectionId: string,
+  selectionToken: string,
+  idempotencyKey: string
+) {
   const { connection, adapter } = await loadConnection(connectionId);
-  const outcome = await adapter.redeem(accessToken(connection), selectionToken);
-  const refreshed = await fetchAndPersistProviderLimits(connectionId, "manual");
-  return { outcome, usage: refreshed.usage };
+  try {
+    let activeConnection = connection;
+    let outcome: ResetOutcome;
+    try {
+      outcome = await withConnectionProxy(connectionId, () =>
+        adapter.redeem(activeConnection, selectionToken, idempotencyKey)
+      );
+    } catch (error) {
+      if (
+        activeConnection.provider !== "codex" ||
+        !(error instanceof CodexResetCreditError) ||
+        (error.status !== 401 && error.status !== 403)
+      ) {
+        throw error;
+      }
+      const refreshed = await refreshAndUpdateCredentials(activeConnection, { force: true });
+      activeConnection = refreshed.connection as ResetCreditConnection;
+      outcome = await withConnectionProxy(connectionId, () =>
+        adapter.redeem(activeConnection, selectionToken, idempotencyKey)
+      );
+    }
+    adapter.invalidate?.(connectionId);
+    const refreshed = await fetchAndPersistProviderLimits(connectionId, "manual");
+    return { outcome, usage: refreshed.usage };
+  } catch (error) {
+    if (error instanceof ResetCreditError) throw error;
+    if (error instanceof CodexResetCreditError) {
+      throw new ResetCreditError(error.status, error.code, error.message);
+    }
+    throw error;
+  }
 }
 
 export { ResetCreditError };

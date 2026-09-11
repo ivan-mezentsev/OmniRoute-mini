@@ -2632,9 +2632,18 @@ async function getCodexUsage(
       };
     }
 
+    const resetCredits = toRecord(
+      getFieldValue(data, "rate_limit_reset_credits", "rateLimitResetCredits")
+    );
+    const availableResetCredits = getFieldValue(resetCredits, "available_count", "availableCount");
+    const bankedResetCredits = Number(availableResetCredits);
+
     return {
       plan: String(getFieldValue(data, "plan_type", "planType") || "unknown"),
       limitReached: Boolean(getFieldValue(rateLimit, "limit_reached", "limitReached")),
+      ...(availableResetCredits !== null && Number.isFinite(bankedResetCredits)
+        ? { bankedResetCredits: Math.max(0, Math.trunc(bankedResetCredits)) }
+        : {}),
       quotas,
     };
   } catch (error) {

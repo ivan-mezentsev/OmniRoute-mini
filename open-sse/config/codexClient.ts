@@ -42,6 +42,14 @@ export function getCodexDefaultHeaders(): Record<string, string> {
   };
 }
 
+export function getCodexBackendIdentityHeaders(): Record<string, string> {
+  return {
+    "User-Agent": getCodexUserAgent(),
+    Version: getCodexClientVersion(),
+    originator: "codex_cli_rs",
+  };
+}
+
 export function normalizeCodexSessionId(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim();

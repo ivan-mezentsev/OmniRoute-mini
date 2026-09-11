@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import { useNotificationStore } from "@/store/notificationStore";
 import { parseQuotaData } from "./utils";
@@ -26,6 +26,7 @@ export function useResetCredits(
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
   const [picker, setPicker] = useState<ResetCreditPicker | null>(null);
+  const idempotencyKeys = useRef<Record<string, string>>({});
 
   const open = useCallback(
     async (connectionId: string, provider: string) => {
@@ -61,13 +62,24 @@ export function useResetCredits(
   const redeem = useCallback(
     async (selectionToken: string) => {
       if (!picker || redeemingId || !selectionToken) return;
+      const idempotencyScope = `${picker.connectionId}:${selectionToken}`;
+      const idempotencyKey =
+        idempotencyKeys.current[idempotencyScope] ||
+        (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+      idempotencyKeys.current[idempotencyScope] = idempotencyKey;
       setRedeemingId(picker.connectionId);
       setErrors((previous) => ({ ...previous, [picker.connectionId]: null }));
       try {
         const response = await fetch("/api/usage/reset-credits", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ connectionId: picker.connectionId, selectionToken }),
+          body: JSON.stringify({
+            connectionId: picker.connectionId,
+            selectionToken,
+            idempotencyKey,
+          }),
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(responseError(data, "Failed to apply reset credit."));
@@ -85,6 +97,7 @@ export function useResetCredits(
           ...previous,
           [picker.connectionId]: new Date().toISOString(),
         }));
+        delete idempotencyKeys.current[idempotencyScope];
         setPicker(null);
         notify.success(
           data.outcome === "alreadyRedeemed"

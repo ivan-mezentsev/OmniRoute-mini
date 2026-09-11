@@ -9,6 +9,7 @@ const connectionIdSchema = z.string().trim().min(1).max(256);
 const redeemSchema = z.object({
   connectionId: connectionIdSchema,
   selectionToken: z.string().trim().min(1).max(512),
+  idempotencyKey: z.string().trim().min(1).max(256),
 });
 
 function errorResponse(error: unknown): Response {
@@ -53,7 +54,11 @@ export async function POST(request: Request): Promise<Response> {
   try {
     return Response.json({
       ok: true,
-      ...(await redeemResetCredit(parsed.data.connectionId, parsed.data.selectionToken)),
+      ...(await redeemResetCredit(
+        parsed.data.connectionId,
+        parsed.data.selectionToken,
+        parsed.data.idempotencyKey
+      )),
     });
   } catch (error) {
     return errorResponse(error);

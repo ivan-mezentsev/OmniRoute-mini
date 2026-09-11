@@ -41,6 +41,7 @@ export interface CodexDualWindowQuota extends QuotaInfo {
   window5h: { percentUsed: number; resetAt: string | null };
   window7d: { percentUsed: number; resetAt: string | null };
   limitReached: boolean;
+  bankedResetCredits?: number;
 }
 
 interface CacheEntry {
@@ -259,6 +260,9 @@ function parseCodexUsageResponse(data: unknown): CodexDualWindowQuota | null {
   const percentUsedNormalized = worstPercentUsed / 100; // QuotaInfo uses 0..1
 
   const limitReached = Boolean(rateLimit["limit_reached"] ?? rateLimit["limitReached"]);
+  const resetCredits = toRecord(obj["rate_limit_reset_credits"] ?? obj["rateLimitResetCredits"]);
+  const availableResetCredits = resetCredits["available_count"] ?? resetCredits["availableCount"];
+  const bankedResetCredits = toNumber(availableResetCredits, Number.NaN);
 
   const window5h = { percentUsed: usedPercent5h / 100, resetAt: resetAt5h };
   const window7d = { percentUsed: usedPercent7d / 100, resetAt: resetAt7d };
@@ -281,6 +285,9 @@ function parseCodexUsageResponse(data: unknown): CodexDualWindowQuota | null {
     window5h,
     window7d,
     limitReached,
+    ...(Number.isFinite(bankedResetCredits)
+      ? { bankedResetCredits: Math.max(0, Math.trunc(bankedResetCredits)) }
+      : {}),
   };
 }
 

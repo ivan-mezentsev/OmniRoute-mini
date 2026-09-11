@@ -113,7 +113,10 @@ async function syncToCloudIfEnabled() {
   }
 }
 
-export async function refreshAndUpdateCredentials(connection: ProviderConnectionLike) {
+export async function refreshAndUpdateCredentials(
+  connection: ProviderConnectionLike,
+  options: { force?: boolean } = {}
+) {
   const executor = getExecutor(connection.provider);
   const credentials = {
     accessToken: connection.accessToken,
@@ -124,7 +127,7 @@ export async function refreshAndUpdateCredentials(connection: ProviderConnection
     copilotTokenExpiresAt: connection.providerSpecificData?.copilotTokenExpiresAt,
   };
 
-  if (!executor.needsRefresh(credentials)) {
+  if (!options.force && !executor.needsRefresh(credentials)) {
     return { connection, refreshed: false };
   }
 

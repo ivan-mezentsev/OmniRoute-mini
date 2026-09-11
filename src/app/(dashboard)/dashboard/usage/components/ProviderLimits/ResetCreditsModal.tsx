@@ -7,7 +7,12 @@ import { translateUsageOrFallback } from "./i18nFallback";
 
 export interface ResetCreditView {
   selectionToken: string;
-  expiresAt: string | null;
+  expiresAt?: string | null;
+  grantedAt?: string | null;
+  resetType?: string;
+  status?: string;
+  title?: string;
+  description?: string;
 }
 
 interface Props {
@@ -56,13 +61,26 @@ export default function ResetCreditsModal({
               >
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-text-main">
-                    {tr("resetCreditItem", "Reset credit")} {index + 1}
+                    {credit.title || `${tr("resetCreditItem", "Reset credit")} ${index + 1}`}
                   </div>
+                  {credit.description && (
+                    <div className="mt-0.5 text-xs text-text-muted">{credit.description}</div>
+                  )}
+                  {(credit.resetType || credit.status) && (
+                    <div className="mt-0.5 text-xs text-text-muted">
+                      {[credit.resetType, credit.status].filter(Boolean).join(" · ")}
+                    </div>
+                  )}
                   <div className="mt-0.5 text-xs text-text-muted">
                     {credit.expiresAt
                       ? `${tr("expires", "Expires")} ${new Date(credit.expiresAt).toLocaleString()}`
                       : tr("noExpiryReported", "No expiry reported")}
                   </div>
+                  {credit.grantedAt && (
+                    <div className="mt-0.5 text-xs text-text-muted">
+                      {tr("granted", "Granted")} {new Date(credit.grantedAt).toLocaleString()}
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
