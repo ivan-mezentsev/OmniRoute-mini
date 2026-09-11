@@ -33,10 +33,10 @@ function encodeTimestamp(seconds: number): Buffer {
   return encodeLengthDelimited(5, Buffer.concat([encodeField(1, 0), encodeVarint(seconds)]));
 }
 
-function buildCreditsPayload(usageRatio: number, resetSeconds = 1893456000): Buffer {
-  const ratio = Buffer.alloc(4);
-  ratio.writeFloatLE(usageRatio);
-  const credits = Buffer.concat([encodeField(1, 5), ratio, encodeTimestamp(resetSeconds)]);
+function buildCreditsPayload(usagePercent: number, resetSeconds = 1893456000): Buffer {
+  const percent = Buffer.alloc(4);
+  percent.writeFloatLE(usagePercent);
+  const credits = Buffer.concat([encodeField(1, 5), percent, encodeTimestamp(resetSeconds)]);
   return encodeLengthDelimited(1, credits);
 }
 
@@ -67,7 +67,7 @@ test.afterEach(() => {
 });
 
 test("Grok Build quota decoder accepts raw and framed protobuf responses", () => {
-  const payload = buildCreditsPayload(0.375);
+  const payload = buildCreditsPayload(37.5);
   const raw = decodeGrokCreditsFrame(payload);
   const framed = decodeGrokCreditsFrame(frame(payload));
 
@@ -79,13 +79,22 @@ test("Grok Build quota decoder accepts raw and framed protobuf responses", () =>
   assert.equal(decodeGrokCreditsFrame(Buffer.from([0xff, 0xff])), null);
 });
 
+test("Grok Build quota decoder preserves decimal percentage precision", () => {
+  const liveValue = decodeGrokCreditsFrame(frame(buildCreditsPayload(1.0)));
+  const decoded = decodeGrokCreditsFrame(frame(buildCreditsPayload(1.25)));
+
+  assert.equal(liveValue?.percentUsed, 1);
+  assert.ok(decoded);
+  assert.ok(Math.abs(decoded.percentUsed - 1.25) < 0.001);
+});
+
 test("Grok Build quota fetch uses OAuth bearer and Grok client fingerprint", async () => {
   let requestUrl = "";
   let requestInit: RequestInit | undefined;
   globalThis.fetch = (async (input, init) => {
     requestUrl = String(input);
     requestInit = init;
-    return new Response(frame(buildCreditsPayload(0.2)) as unknown as BodyInit, {
+    return new Response(frame(buildCreditsPayload(20)) as unknown as BodyInit, {
       status: 200,
       headers: { "Content-Type": "application/grpc-web+proto" },
     });
@@ -108,7 +117,7 @@ test("Grok Build usage is exposed to dashboard and generic quota registration", 
   globalThis.fetch = (async (input) => {
     const body = String(input).includes("GetRemainingResets")
       ? buildResetCreditsResponse()
-      : frame(buildCreditsPayload(0.6));
+      : frame(buildCreditsPayload(60));
     return new Response(body as unknown as BodyInit, { status: 200 });
   }) as typeof fetch;
 

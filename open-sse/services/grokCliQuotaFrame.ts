@@ -1,5 +1,5 @@
 const FIELD_CREDITS_INFO = 1;
-const CREDITS_FIELD_USAGE_RATIO = 1;
+const CREDITS_FIELD_USAGE_PERCENT = 1;
 const CREDITS_FIELD_RESET_TIMESTAMP = 5;
 const TIMESTAMP_FIELD_SECONDS = 1;
 const TIMESTAMP_FIELD_NANOS = 2;
@@ -138,15 +138,16 @@ export function decodeGrokCreditsFrame(buffer: Buffer): GrokCreditsQuota | null 
     const credits = decodeFields(creditsField.bytes);
     if (!credits) return null;
 
-    const ratioField = credits.get(CREDITS_FIELD_USAGE_RATIO);
-    let ratio = 0;
-    if (ratioField?.wireType === WIRE_FIXED32) ratio = ratioField.bytes.readFloatLE(0);
-    else if (ratioField?.wireType === WIRE_FIXED64) ratio = ratioField.bytes.readDoubleLE(0);
-    else if (ratioField) return null;
-    if (!Number.isFinite(ratio) || ratio < 0) return null;
+    const percentField = credits.get(CREDITS_FIELD_USAGE_PERCENT);
+    let percentUsed = 0;
+    if (percentField?.wireType === WIRE_FIXED32) percentUsed = percentField.bytes.readFloatLE(0);
+    else if (percentField?.wireType === WIRE_FIXED64)
+      percentUsed = percentField.bytes.readDoubleLE(0);
+    else if (percentField) return null;
+    if (!Number.isFinite(percentUsed) || percentUsed < 0) return null;
 
     return {
-      percentUsed: Math.min(100, ratio * 100),
+      percentUsed: Math.min(100, percentUsed),
       resetAt: decodeTimestamp(credits.get(CREDITS_FIELD_RESET_TIMESTAMP)),
     };
   } catch {

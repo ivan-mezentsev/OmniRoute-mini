@@ -107,7 +107,7 @@ test("Grok reset-credit connection service lists, redeems and refreshes persiste
       );
     }
     if (url.includes("GetRemainingResets")) return resetInventory(redeemed ? 0 : 1);
-    if (url.includes("GetGrokCreditsConfig")) return quotaResponse(0.25);
+    if (url.includes("GetGrokCreditsConfig")) return quotaResponse(25);
     return new Response(null, { status: 404 });
   }) as typeof fetch;
 
