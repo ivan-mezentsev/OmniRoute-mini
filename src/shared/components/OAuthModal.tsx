@@ -173,8 +173,8 @@ export default function OAuthModal({
 
   // Save a raw API token directly (windsurf / devin-cli import-token path)
   const handleSaveToken = useCallback(async () => {
-    const token = pasteToken.trim();
-    if (!token || !provider) return;
+    const rawToken = pasteToken.trim();
+    if (!rawToken || !provider) return;
     setSavingToken(true);
     setError(null);
     try {
@@ -184,7 +184,7 @@ export default function OAuthModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          token,
+          token: rawToken,
           connectionId: reauthConnection?.id,
         }),
       });
@@ -272,7 +272,8 @@ export default function OAuthModal({
         provider === "kiro" ||
         provider === "amazon-q" ||
         provider === "kimi-coding" ||
-        provider === "kilocode"
+        provider === "kilocode" ||
+        provider === "grok-cli"
       ) {
         setIsDeviceCode(true);
         setStep("waiting");
@@ -553,7 +554,11 @@ export default function OAuthModal({
       const isGoogleLoopbackRelay =
         GOOGLE_OAUTH_PROVIDERS.has(provider) && isLoopbackOrigin && hasMatchingState;
 
-      if (event.origin !== window.location.origin && !isLocalhostSamePort && !isGoogleLoopbackRelay) {
+      if (
+        event.origin !== window.location.origin &&
+        !isLocalhostSamePort &&
+        !isGoogleLoopbackRelay
+      ) {
         return;
       }
       if (event.data?.type === "oauth_callback") {
@@ -708,7 +713,7 @@ export default function OAuthModal({
       size="lg"
     >
       <div className="flex flex-col gap-4">
-        {/* Paste-token tab toggle (Windsurf / Devin CLI only).
+        {/* Paste-token tab toggle.
             Phase 1 hotfix: when importTokenOnly is true, hide the entire toggle —
             there is no "Browser Login" tab to switch to until Phase 2 ships. */}
         {supportsTokenPaste && !importTokenOnly && step !== "success" && (
@@ -728,7 +733,7 @@ export default function OAuthModal({
           </div>
         )}
 
-        {/* Paste-token form (Windsurf / Devin CLI) */}
+        {/* Paste-token form */}
         {supportsTokenPaste && showPasteToken && step !== "success" && (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-text-muted">

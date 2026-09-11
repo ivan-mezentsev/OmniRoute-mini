@@ -45,6 +45,7 @@ import { VeniceWebExecutor } from "./venice-web.ts";
 import { V0VercelWebExecutor } from "./v0-vercel-web.ts";
 import { KimiWebExecutor } from "./kimi-web.ts";
 import { DoubaoWebExecutor } from "./doubao-web.ts";
+import { GrokCliExecutor } from "./grok-cli.ts";
 
 const executors = {
   antigravity: new AntigravityExecutor(),
@@ -85,6 +86,8 @@ const executors = {
   "perplexity-web": new PerplexityWebExecutor(),
   "pplx-web": new PerplexityWebExecutor(), // Alias
   "grok-web": new GrokWebExecutor(),
+  "grok-cli": new GrokCliExecutor(),
+  gc: new GrokCliExecutor(), // Alias
   "claude-web": new ClaudeWebWithAutoRefresh(),
   "cw-web": new ClaudeWebWithAutoRefresh(), // Alias
   "gemini-web": new GeminiWebExecutor(),
@@ -108,7 +111,7 @@ const executors = {
   "veoaifree-web": new VeoAIFreeWebExecutor(),
   "veo-free": new VeoAIFreeWebExecutor(), // Alias
   "duckduckgo-web": new DuckDuckGoWebExecutor(),
-  "ddgw": new DuckDuckGoWebExecutor(), // Alias
+  ddgw: new DuckDuckGoWebExecutor(), // Alias
   "t3-web": new T3ChatWebExecutor(),
   t3chat: new T3ChatWebExecutor(), // Alias
   "inner-ai": new InnerAiExecutor(),
@@ -160,6 +163,7 @@ export { NineRouterExecutor } from "./ninerouter.ts";
 export { VertexExecutor } from "./vertex.ts";
 export { PerplexityWebExecutor } from "./perplexity-web.ts";
 export { GrokWebExecutor } from "./grok-web.ts";
+export { GrokCliExecutor } from "./grok-cli.ts";
 export { GeminiWebExecutor } from "./gemini-web.ts";
 export { KieExecutor } from "./kie.ts";
 export { ChatGptWebExecutor } from "./chatgpt-web.ts";

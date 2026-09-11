@@ -13,10 +13,8 @@ import { getGitHubCopilotInternalUserHeaders } from "../config/providerHeaderPro
 import { safePercentage } from "@/shared/utils/formatting";
 import { fetchBailianQuota, type BailianTripleWindowQuota } from "./bailianQuotaFetcher.ts";
 import { fetchDeepseekQuota, type DeepseekQuota } from "./deepseekQuotaFetcher.ts";
-import {
-  fetchOpencodeQuota,
-  type OpencodeTripleWindowQuota,
-} from "./opencodeQuotaFetcher.ts";
+import { fetchGrokCliQuota } from "./grokCliQuotaFetcher.ts";
+import { fetchOpencodeQuota, type OpencodeTripleWindowQuota } from "./opencodeQuotaFetcher.ts";
 import {
   applyAntigravityClientProfileHeaders,
   getAntigravityBootstrapHeaders,
@@ -1064,7 +1062,9 @@ async function getOpencodeUsage(connectionId: string, apiKey: string) {
   }
 
   try {
-    const quota = (await fetchOpencodeQuota(connectionId, { apiKey })) as OpencodeTripleWindowQuota | null;
+    const quota = (await fetchOpencodeQuota(connectionId, {
+      apiKey,
+    })) as OpencodeTripleWindowQuota | null;
 
     if (!quota) {
       return { message: "OpenCode connected. Unable to fetch quota data." };
@@ -1337,6 +1337,23 @@ async function getCursorUsage(accessToken: string, providerSpecificData?: unknow
   }
 }
 
+async function getGrokCliUsage(accessToken?: string) {
+  const quota = await fetchGrokCliQuota(accessToken || "");
+  if (!quota) {
+    return { message: "Grok Build connected. Unable to fetch the shared credit pool." };
+  }
+
+  return {
+    plan: "Grok Build",
+    quotas: {
+      weekly: {
+        ...quota,
+        displayName: "Shared Weekly Credits",
+      },
+    },
+  };
+}
+
 /**
  * Single source of truth for which providers have a `getUsageForProvider`
  * implementation. Consumers like `genericQuotaFetcher.ts` reference this so
@@ -1350,6 +1367,7 @@ export const USAGE_FETCHER_PROVIDERS = [
   "antigravity",
   "claude",
   "codex",
+  "grok-cli",
   "cursor",
   "kiro",
   "amazon-q",
@@ -1396,6 +1414,8 @@ export async function getUsageForProvider(
       return await getClaudeUsage(accessToken);
     case "codex":
       return await getCodexUsage(accessToken, providerSpecificData);
+    case "grok-cli":
+      return await getGrokCliUsage(accessToken);
     case "cursor":
       return await getCursorUsage(accessToken || "", providerSpecificData);
     case "kiro":
@@ -1543,10 +1563,7 @@ async function getGitHubUsage(accessToken?: string, providerSpecificData?: JsonR
       const addLimitedQuota = (name: string) => {
         const total = toNumber(getFieldValue(monthlyQuotas, name, name), 0);
         if (total <= 0) return null;
-        const remainingRaw = Math.max(
-          0,
-          toNumber(getFieldValue(remainingQuotas, name, name), 0)
-        );
+        const remainingRaw = Math.max(0, toNumber(getFieldValue(remainingQuotas, name, name), 0));
         const remaining = Math.min(remainingRaw, total);
         const used = Math.max(total - remaining, 0);
         quotas[name] = {

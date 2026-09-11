@@ -55,6 +55,18 @@ export function supportsApiKeyOnFreeProvider(providerId: unknown): boolean {
 
 // OAuth Providers
 export const OAUTH_PROVIDERS = {
+  "grok-cli": {
+    id: "grok-cli",
+    alias: "gc",
+    name: "Grok Build",
+    icon: "bolt",
+    color: "#000000",
+    textIcon: "GB",
+    website: "https://x.ai/grok",
+    subscriptionRisk: true,
+    riskNoticeVariant: "oauth",
+    authHint: "Sign in through the official Grok Build device flow.",
+  },
   qoder: {
     id: "qoder",
     alias: "if",
@@ -3007,6 +3019,7 @@ export const USAGE_SUPPORTED_PROVIDERS = [
   "amazon-q",
   "github",
   "codex",
+  "grok-cli",
   "claude",
   "cursor",
   "kimi-coding",

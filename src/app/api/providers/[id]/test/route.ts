@@ -24,8 +24,19 @@ import {
 import { providerAllowsOptionalApiKey } from "@/shared/constants/providers";
 import { removeConnectionHealth } from "@omniroute/open-sse/services/apiKeyRotator.ts";
 
+type OAuthTestConfig = {
+  checkExpiry?: boolean;
+  refreshable?: boolean;
+  url?: string;
+  getUrl?: (connection: any) => string;
+  method?: string;
+  authHeader?: string;
+  authPrefix?: string;
+  extraHeaders?: Record<string, string>;
+};
+
 // OAuth provider test endpoints
-const OAUTH_TEST_CONFIG = {
+const OAUTH_TEST_CONFIG: Record<string, OAuthTestConfig> = {
   claude: {
     // Claude doesn't have userinfo, we verify token exists and not expired
     checkExpiry: true,
@@ -98,6 +109,10 @@ const OAUTH_TEST_CONFIG = {
     refreshable: true,
   },
   "amazon-q": {
+    checkExpiry: true,
+    refreshable: true,
+  },
+  "grok-cli": {
     checkExpiry: true,
     refreshable: true,
   },
@@ -330,15 +345,19 @@ async function refreshOAuthToken(connection: any) {
       if (refreshed.expiresAt) {
         update.expiresAt = refreshed.expiresAt;
         update.tokenExpiresAt = refreshed.expiresAt;
-      } else if (refreshed.expiresIn) {
+      } else if (typeof refreshed.expiresIn === "number") {
         const expiresAt = new Date(Date.now() + refreshed.expiresIn * 1000).toISOString();
         update.expiresAt = expiresAt;
         update.tokenExpiresAt = expiresAt;
       }
-      if (refreshed.providerSpecificData) {
+      if (
+        refreshed.providerSpecificData &&
+        typeof refreshed.providerSpecificData === "object" &&
+        !Array.isArray(refreshed.providerSpecificData)
+      ) {
         update.providerSpecificData = {
           ...(connection.providerSpecificData || {}),
-          ...refreshed.providerSpecificData,
+          ...(refreshed.providerSpecificData as Record<string, unknown>),
         };
       }
       await updateProviderConnection(connection.id, update);

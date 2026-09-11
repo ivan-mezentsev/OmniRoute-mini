@@ -156,7 +156,8 @@ export async function GET(
         provider === "kiro" ||
         provider === "amazon-q" ||
         provider === "kimi-coding" ||
-        provider === "kilocode"
+        provider === "kilocode" ||
+        provider === "grok-cli"
       ) {
         // GitHub, Kiro/Amazon Q, Kimi Coding, and KiloCode don't use PKCE for device code
         if ((provider === "kiro" || provider === "amazon-q") && startUrl) {
@@ -464,7 +465,12 @@ export async function POST(
 
       // Poll for token (through proxy if configured)
       let result;
-      if (provider === "github" || provider === "kimi-coding" || provider === "kilocode") {
+      if (
+        provider === "github" ||
+        provider === "kimi-coding" ||
+        provider === "kilocode" ||
+        provider === "grok-cli"
+      ) {
         // For providers that don't use PKCE (GitHub, Kimi Coding, KiloCode), don't pass codeVerifier
         result = await runWithProxyContext(proxy, () =>
           (pollForToken as any)(provider, deviceCode)

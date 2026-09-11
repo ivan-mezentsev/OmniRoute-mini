@@ -14,6 +14,11 @@ import {
   GITHUB_COPILOT_EDITOR_VERSION,
 } from "@omniroute/open-sse/config/providerHeaderProfiles.ts";
 import {
+  GROK_BUILD_DEVICE_CODE_URL,
+  GROK_BUILD_OAUTH_SCOPES,
+  GROK_BUILD_TOKEN_URL,
+} from "@omniroute/open-sse/config/grokBuild.ts";
+import {
   resolvePublicCred,
   resolvePublicCredMulti,
 } from "@omniroute/open-sse/utils/publicCreds.ts";
@@ -152,6 +157,13 @@ export const CLINE_CONFIG = {
   authorizeUrl: "https://api.cline.bot/api/v1/auth/authorize",
   tokenExchangeUrl: "https://api.cline.bot/api/v1/auth/token",
   refreshUrl: "https://api.cline.bot/api/v1/auth/refresh",
+};
+
+export const GROK_CLI_CONFIG = {
+  clientId: resolvePublicCred("grok_id", "GROK_OAUTH_CLIENT_ID"),
+  deviceCodeUrl: GROK_BUILD_DEVICE_CODE_URL,
+  tokenUrl: GROK_BUILD_TOKEN_URL,
+  scope: GROK_BUILD_OAUTH_SCOPES.join(" "),
 };
 
 // Antigravity OAuth Configuration (Standard OAuth2 with Google)
@@ -424,4 +436,5 @@ export const PROVIDERS = {
   WINDSURF: "windsurf",
   DEVIN_CLI: "devin-cli",
   TRAE: "trae",
+  GROK_CLI: "grok-cli",
 };

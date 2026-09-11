@@ -20,7 +20,7 @@ const registryModule = await import("../../open-sse/config/providerRegistry.ts")
 const antigravityHeadersModule = await import("../../open-sse/services/antigravityHeaders.ts");
 const oauthHelpersModule = await import("../../src/lib/oauth/providers.ts");
 
-const PROVIDERS = providersModule.default;
+const PROVIDERS = providersModule.default as Record<string, any>;
 const { resolveBrowserOAuthRedirectUri } = oauthHelpersModule;
 const {
   ANTIGRAVITY_CONFIG,
@@ -41,6 +41,7 @@ const {
   QWEN_CONFIG,
   TRAE_CONFIG,
   WINDSURF_CONFIG,
+  GROK_CLI_CONFIG,
 } = oauthModule;
 const { REGISTRY } = registryModule;
 const { getAntigravityLoadCodeAssistMetadata } = antigravityHeadersModule;
@@ -66,6 +67,7 @@ const EXPECTED_PROVIDER_KEYS = [
   "cline",
   "windsurf",
   "devin-cli",
+  "grok-cli",
 ];
 
 const EXPECTED_CONFIG_BY_PROVIDER = {
@@ -86,6 +88,7 @@ const EXPECTED_CONFIG_BY_PROVIDER = {
   cline: CLINE_CONFIG,
   windsurf: WINDSURF_CONFIG,
   "devin-cli": WINDSURF_CONFIG,
+  "grok-cli": GROK_CLI_CONFIG,
   trae: TRAE_CONFIG,
 };
 
@@ -134,6 +137,7 @@ const REQUIRED_FIELDS_BY_PROVIDER = {
   cline: ["appBaseUrl", "apiBaseUrl", "authorizeUrl", "tokenExchangeUrl", "refreshUrl"],
   windsurf: ["authorizeUrl", "apiServerUrl", "exchangePath", "inferenceUrl"],
   "devin-cli": ["authorizeUrl", "apiServerUrl", "exchangePath", "inferenceUrl"],
+  "grok-cli": ["deviceCodeUrl", "tokenUrl", "scope", "clientId"],
   trae: ["apiEndpoint", "chatEndpoint", "webUrl"],
 };
 
@@ -365,29 +369,21 @@ test("custom Google OAuth callbacks preserve the requested callback path and que
 });
 
 test("custom Google OAuth credentials switch IPv6 loopback callbacks to public base URL", () => {
-  const redirectUri = resolveBrowserOAuthRedirectUri(
-    "gemini-cli",
-    "http://[::1]:20128/callback",
-    {
-      OMNIROUTE_PUBLIC_BASE_URL: "https://omniroute.example.com",
-      GEMINI_OAUTH_CLIENT_ID: "custom-gemini.apps.googleusercontent.com",
-      GEMINI_OAUTH_CLIENT_SECRET: "custom-gemini-secret",
-    }
-  );
+  const redirectUri = resolveBrowserOAuthRedirectUri("gemini-cli", "http://[::1]:20128/callback", {
+    OMNIROUTE_PUBLIC_BASE_URL: "https://omniroute.example.com",
+    GEMINI_OAUTH_CLIENT_ID: "custom-gemini.apps.googleusercontent.com",
+    GEMINI_OAUTH_CLIENT_SECRET: "custom-gemini-secret",
+  });
 
   assert.equal(redirectUri, "https://omniroute.example.com/callback");
 });
 
 test("custom Google OAuth callbacks default root loopback paths to callback path", () => {
-  const redirectUri = resolveBrowserOAuthRedirectUri(
-    "antigravity",
-    "http://127.0.0.1:20128",
-    {
-      NEXT_PUBLIC_BASE_URL: "https://omniroute.example.com",
-      ANTIGRAVITY_OAUTH_CLIENT_ID: "custom-antigravity.apps.googleusercontent.com",
-      ANTIGRAVITY_OAUTH_CLIENT_SECRET: "custom-antigravity-secret",
-    }
-  );
+  const redirectUri = resolveBrowserOAuthRedirectUri("antigravity", "http://127.0.0.1:20128", {
+    NEXT_PUBLIC_BASE_URL: "https://omniroute.example.com",
+    ANTIGRAVITY_OAUTH_CLIENT_ID: "custom-antigravity.apps.googleusercontent.com",
+    ANTIGRAVITY_OAUTH_CLIENT_SECRET: "custom-antigravity-secret",
+  });
 
   assert.equal(redirectUri, "https://omniroute.example.com/callback");
 });

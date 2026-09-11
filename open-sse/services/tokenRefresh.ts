@@ -6,6 +6,7 @@ import { pbkdf2Sync } from "node:crypto";
 import { runWithProxyContext } from "../utils/proxyFetch.ts";
 import { WINDSURF_CONFIG } from "@/lib/oauth/constants/oauth";
 import { buildGitLabOAuthEndpoints, resolveGitLabOAuthBaseUrl } from "@/lib/oauth/gitlab";
+import { refreshGrokCliCredentials } from "./grokCliTokenRefresh.ts";
 
 // Default token expiry buffer (refresh if expires within 5 minutes).
 // Used as fallback for providers without an explicit lead time in
@@ -1308,6 +1309,9 @@ async function _getAccessTokenInternal(provider, credentials, log, proxyConfig: 
 
     case "codex":
       return await refreshCodexToken(credentials.refreshToken, log, proxyConfig);
+
+    case "grok-cli":
+      return await refreshGrokCliCredentials(credentials, log);
 
     case "qwen":
       return await refreshQwenToken(credentials.refreshToken, log, proxyConfig);

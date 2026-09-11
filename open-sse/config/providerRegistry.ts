@@ -18,6 +18,7 @@ import {
   CLAUDE_CLI_USER_AGENT,
 } from "./anthropicHeaders.ts";
 import { getCodexDefaultHeaders } from "./codexClient.ts";
+import { getGrokBuildClientVersion, GROK_BUILD_TOKEN_URL } from "./grokBuild.ts";
 import {
   GLM_REQUEST_DEFAULTS,
   GLMT_REQUEST_DEFAULTS,
@@ -2749,6 +2750,50 @@ export const REGISTRY: Record<string, RegistryEntry> = {
       { id: "grok-4.20-0309-reasoning", name: "Grok 4.20 Reasoning" },
       { id: "grok-4.20-0309-non-reasoning", name: "Grok 4.20" },
     ],
+  },
+
+  "grok-cli": {
+    id: "grok-cli",
+    alias: "gc",
+    format: "openai",
+    executor: "grok-cli",
+    baseUrl: "https://cli-chat-proxy.grok.com/v1/chat/completions",
+    clientVersion: getGrokBuildClientVersion(),
+    authType: "oauth",
+    authHeader: "bearer",
+    passthroughModels: true,
+    models: [
+      {
+        id: "grok-4.6",
+        name: "Grok 4.6",
+        contextLength: 500000,
+        supportsReasoning: true,
+        supportsXHighEffort: true,
+        toolCalling: true,
+        targetFormat: "openai-responses",
+      },
+      {
+        id: "grok-4.5",
+        name: "Grok 4.5",
+        contextLength: 500000,
+        supportsReasoning: true,
+        supportsXHighEffort: true,
+        toolCalling: true,
+        targetFormat: "openai-responses",
+      },
+      {
+        id: "grok-composer-2.5-fast",
+        name: "Composer 2.5",
+        contextLength: 200000,
+        toolCalling: true,
+        targetFormat: "openai-responses",
+      },
+    ],
+    oauth: {
+      clientIdEnv: "GROK_OAUTH_CLIENT_ID",
+      clientIdDefault: resolvePublicCred("grok_id", "GROK_OAUTH_CLIENT_ID"),
+      tokenUrl: GROK_BUILD_TOKEN_URL,
+    },
   },
 
   "chatgpt-web": {

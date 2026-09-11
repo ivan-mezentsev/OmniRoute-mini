@@ -51,6 +51,12 @@ test("resolvePublicCred('windsurf_fb') returns an AIza-style Google API key", ()
   assert.match(v, /^A[I]za[A-Za-z0-9_-]{20,}$/);
 });
 
+test("resolvePublicCred('grok_id') returns the embedded Grok Build public client id", () => {
+  const value = resolvePublicCred("grok_id");
+  assert.ok(value.length > 20);
+  assert.equal(value, resolvePublicCred("grok_id"));
+});
+
 test("encode/decode roundtrip is stable across arbitrary plaintexts", () => {
   for (const sample of [
     "hello world",
