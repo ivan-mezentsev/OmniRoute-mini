@@ -122,6 +122,27 @@ test("v1 models catalog accepts bearer API keys and filters the list by allowed 
   );
 });
 
+test("v1 models catalog uses context length when Grok has no explicit output limit", async () => {
+  await seedConnection("grok-cli", {
+    authType: "oauth",
+    name: "grok-main",
+    apiKey: null,
+    accessToken: "grok-access",
+  });
+
+  const response = await v1ModelsCatalog.getUnifiedModelsResponse(
+    new Request("http://localhost/api/v1/models")
+  );
+  const body = (await response.json()) as any;
+  const grok = body.data.find((item) => item.id === "gc/grok-4.6");
+
+  assert.equal(response.status, 200);
+  assert.ok(grok);
+  assert.equal(grok.context_length, 500000);
+  assert.equal(grok.max_input_tokens, 500000);
+  assert.equal(grok.max_output_tokens, 500000);
+});
+
 test("v1 models catalog hides models excluded by every active connection while keeping models served by at least one account", async () => {
   const first = await seedConnection("openai", {
     name: "openai-first",

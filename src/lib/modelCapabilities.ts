@@ -43,7 +43,7 @@ export interface ResolvedModelCapabilities {
   temperature: boolean | null;
   contextWindow: number | null;
   maxInputTokens: number | null;
-  maxOutputTokens: number;
+  maxOutputTokens: number | null;
   defaultThinkingBudget: number;
   thinkingBudgetCap: number | null;
   thinkingOverhead: number | null;
@@ -259,7 +259,7 @@ export function getResolvedModelCapabilities(input: CapabilityInput): ResolvedMo
       synced?.limit_output ??
       (typeof registryModel?.maxOutputTokens === "number" ? registryModel.maxOutputTokens : null) ??
       spec?.maxOutputTokens ??
-      MODEL_SPECS.__default__.maxOutputTokens,
+      contextWindow,
     defaultThinkingBudget: spec?.defaultThinkingBudget ?? 0,
     thinkingBudgetCap: spec?.thinkingBudgetCap ?? null,
     thinkingOverhead: spec?.thinkingOverhead ?? null,
@@ -291,8 +291,9 @@ export function supportsMaxTokens(input: CapabilityInput): boolean {
   return getResolvedModelCapabilities(input).supportsMaxTokens;
 }
 
-export function capMaxOutputTokens(input: CapabilityInput, requested?: number): number {
+export function capMaxOutputTokens(input: CapabilityInput, requested?: number): number | undefined {
   const cap = getResolvedModelCapabilities(input).maxOutputTokens;
+  if (cap === null) return requested;
   return requested ? Math.min(requested, cap) : cap;
 }
 

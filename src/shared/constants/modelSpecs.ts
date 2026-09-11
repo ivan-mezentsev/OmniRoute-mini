@@ -420,11 +420,6 @@ export const MODEL_SPECS: Record<string, ModelSpec> = {
     supportsThinking: true,
     supportsTools: true,
   },
-
-  // Defaults
-  __default__: {
-    maxOutputTokens: 8192,
-  },
 };
 
 export function getModelSpec(modelId: string): ModelSpec | undefined {
@@ -437,15 +432,16 @@ export function getModelSpec(modelId: string): ModelSpec | undefined {
 
   // Prefix matching
   for (const [key, spec] of Object.entries(MODEL_SPECS)) {
-    if (key !== "__default__" && modelId.startsWith(key)) return spec;
+    if (modelId.startsWith(key)) return spec;
   }
 
   return undefined;
 }
 
-export function capMaxOutputTokens(modelId: string, requested?: number): number {
+export function capMaxOutputTokens(modelId: string, requested?: number): number | undefined {
   const spec = getModelSpec(modelId);
-  const cap = spec?.maxOutputTokens ?? MODEL_SPECS.__default__.maxOutputTokens;
+  const cap = spec?.maxOutputTokens;
+  if (cap === undefined) return requested;
   return requested ? Math.min(requested, cap) : cap;
 }
 

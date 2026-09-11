@@ -131,6 +131,15 @@ test("canonical model capability resolver lets exact synced metadata override gl
 
   const bareGpt55 = modelCapabilities.getResolvedModelCapabilities("gpt-5.5");
   assert.equal(bareGpt55.contextWindow, 1050000);
+
+  const grok46 = modelCapabilities.getResolvedModelCapabilities("grok-cli/grok-4.6");
+  assert.equal(grok46.contextWindow, 500000);
+  assert.equal(grok46.maxOutputTokens, 500000);
+
+  const unknown = modelCapabilities.getResolvedModelCapabilities("unknown/model-without-limits");
+  assert.equal(unknown.contextWindow, null);
+  assert.equal(unknown.maxOutputTokens, null);
+  assert.equal(modelCapabilities.capMaxOutputTokens("unknown/model-without-limits", 16384), 16384);
 });
 
 test("GPT OSS and DeepSeek Reasoner models support tool calling", () => {
