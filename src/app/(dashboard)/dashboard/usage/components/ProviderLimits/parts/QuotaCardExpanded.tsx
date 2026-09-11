@@ -23,10 +23,50 @@ interface Props {
   hasStaleData: boolean;
   onRefresh: () => void;
   onOpenCutoff: () => void;
+  onOpenResetCredits?: () => void;
   canEditCutoff: boolean;
+  loadingResetCredits?: boolean;
+  redeemingResetCredit?: boolean;
 }
 
-function QuotaDetailRow({ q }: { q: any }) {
+function QuotaDetailRow({
+  q,
+  onOpenResetCredits,
+  loadingResetCredits,
+}: {
+  q: any;
+  onOpenResetCredits?: () => void;
+  loadingResetCredits?: boolean;
+}) {
+  if (q.isResetCredits) {
+    const count = Number(q.creditCount ?? q.remaining ?? 0);
+    return (
+      <div className="flex items-center justify-between gap-2 py-1">
+        <span className="flex items-center gap-1.5 text-[12px] font-medium text-text-main">
+          <span className="material-symbols-outlined text-[15px] text-primary">restart_alt</span>
+          Reset credits
+        </span>
+        <button
+          type="button"
+          disabled={!onOpenResetCredits || loadingResetCredits}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenResetCredits?.();
+          }}
+          className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[12px] font-bold tabular-nums text-primary hover:bg-black/[0.05] disabled:cursor-default dark:hover:bg-white/[0.05]"
+        >
+          {loadingResetCredits && (
+            <span className="material-symbols-outlined animate-spin text-[12px]">
+              progress_activity
+            </span>
+          )}
+          {count.toLocaleString()}
+          <span className="material-symbols-outlined text-[13px]">chevron_right</span>
+        </button>
+      </div>
+    );
+  }
+
   if (q.isCredits) {
     const colors = getBarColor(q.remainingPercentage ?? 0);
     const sym = CURRENCY_SYMBOLS[q.currency] ?? q.currency ?? "";
@@ -99,7 +139,10 @@ export default function QuotaCardExpanded({
   hasStaleData,
   onRefresh,
   onOpenCutoff,
+  onOpenResetCredits,
   canEditCutoff,
+  loadingResetCredits = false,
+  redeemingResetCredit = false,
 }: Props) {
   const t = useTranslations("usage");
   const tr = (key: string, fallback: string, values?: UsageTranslationValues) =>
@@ -133,7 +176,12 @@ export default function QuotaCardExpanded({
       ) : (
         <div className="flex flex-col divide-y divide-border/40">
           {quotas.map((q, i) => (
-            <QuotaDetailRow key={`${q.name}-${q.modelKey ?? ""}-${i}`} q={q} />
+            <QuotaDetailRow
+              key={`${q.name}-${q.modelKey ?? ""}-${i}`}
+              q={q}
+              onOpenResetCredits={onOpenResetCredits}
+              loadingResetCredits={loadingResetCredits || redeemingResetCredit}
+            />
           ))}
         </div>
       )}

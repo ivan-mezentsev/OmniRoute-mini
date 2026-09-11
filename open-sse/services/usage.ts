@@ -14,6 +14,7 @@ import { safePercentage } from "@/shared/utils/formatting";
 import { fetchBailianQuota, type BailianTripleWindowQuota } from "./bailianQuotaFetcher.ts";
 import { fetchDeepseekQuota, type DeepseekQuota } from "./deepseekQuotaFetcher.ts";
 import { fetchGrokCliQuota } from "./grokCliQuotaFetcher.ts";
+import { fetchGrokResetCreditCount } from "./grokResetCredits.ts";
 import { fetchOpencodeQuota, type OpencodeTripleWindowQuota } from "./opencodeQuotaFetcher.ts";
 import {
   applyAntigravityClientProfileHeaders,
@@ -1338,13 +1339,21 @@ async function getCursorUsage(accessToken: string, providerSpecificData?: unknow
 }
 
 async function getGrokCliUsage(accessToken?: string) {
-  const quota = await fetchGrokCliQuota(accessToken || "");
+  const token = accessToken || "";
+  const [quota, bankedResetCredits] = await Promise.all([
+    fetchGrokCliQuota(token),
+    fetchGrokResetCreditCount(token),
+  ]);
   if (!quota) {
-    return { message: "Grok Build connected. Unable to fetch the shared credit pool." };
+    return {
+      ...(bankedResetCredits !== null ? { bankedResetCredits } : {}),
+      message: "Grok Build connected. Unable to fetch the shared credit pool.",
+    };
   }
 
   return {
     plan: "Grok Build",
+    ...(bankedResetCredits !== null ? { bankedResetCredits } : {}),
     quotas: {
       weekly: {
         ...quota,

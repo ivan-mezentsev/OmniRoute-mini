@@ -46,6 +46,20 @@ function frame(payload: Buffer): Buffer {
   return Buffer.concat([header, payload]);
 }
 
+function buildResetCreditsResponse(): Buffer {
+  const expiresAt = Math.floor(Date.now() / 1000) + 86_400;
+  const token = Buffer.concat([
+    encodeLengthDelimited(10, Buffer.from("selection-token", "utf8")),
+    encodeLengthDelimited(30, Buffer.concat([encodeField(1, 0), encodeVarint(expiresAt)])),
+  ]);
+  const data = frame(encodeLengthDelimited(10, token));
+  const trailerBody = Buffer.from("grpc-status:0\r\n", "utf8");
+  const trailer = Buffer.alloc(5);
+  trailer[0] = 0x80;
+  trailer.writeUInt32BE(trailerBody.length, 1);
+  return Buffer.concat([data, trailer, trailerBody]);
+}
+
 const originalFetch = globalThis.fetch;
 
 test.afterEach(() => {
@@ -91,10 +105,12 @@ test("Grok Build quota fetch uses OAuth bearer and Grok client fingerprint", asy
 });
 
 test("Grok Build usage is exposed to dashboard and generic quota registration", async () => {
-  globalThis.fetch = (async () =>
-    new Response(frame(buildCreditsPayload(0.6)) as unknown as BodyInit, {
-      status: 200,
-    })) as typeof fetch;
+  globalThis.fetch = (async (input) => {
+    const body = String(input).includes("GetRemainingResets")
+      ? buildResetCreditsResponse()
+      : frame(buildCreditsPayload(0.6));
+    return new Response(body as unknown as BodyInit, { status: 200 });
+  }) as typeof fetch;
 
   const usage = (await getUsageForProvider({
     id: "connection-1",
@@ -105,6 +121,7 @@ test("Grok Build usage is exposed to dashboard and generic quota registration", 
   assert.ok(USAGE_FETCHER_PROVIDERS.includes("grok-cli"));
   assert.ok(USAGE_SUPPORTED_PROVIDERS.includes("grok-cli"));
   assert.equal(usage.plan, "Grok Build");
+  assert.equal(usage.bankedResetCredits, 1);
   assert.equal(usage.quotas.weekly.displayName, "Shared Weekly Credits");
   assert.ok(Math.abs(usage.quotas.weekly.used - 60) < 0.001);
   assert.ok(Math.abs(usage.quotas.weekly.remainingPercentage - 40) < 0.001);

@@ -22,6 +22,22 @@ export interface GrokCreditsQuota {
   resetAt: string | null;
 }
 
+export interface GrokFrameHeader {
+  flag: number;
+  payloadStart: number;
+  payloadLength: number;
+}
+
+export function probeFrameHeader(buffer: Buffer, offset = 0): GrokFrameHeader | null {
+  if (offset < 0 || buffer.length - offset < 5) return null;
+  const flag = buffer[offset];
+  if (![0, 1, 0x80, 0x81].includes(flag)) return null;
+  const payloadStart = offset + 5;
+  const payloadLength = buffer.readUInt32BE(offset + 1);
+  if (payloadLength > buffer.length - payloadStart) return null;
+  return { flag, payloadStart, payloadLength };
+}
+
 function readVarint(buffer: Buffer, offset: number): { value: number; next: number } | null {
   let result = 0n;
   let shift = 0n;
@@ -82,17 +98,16 @@ function decodeFields(buffer: Buffer): Map<number, ProtoField> | null {
 }
 
 function getDataPayload(buffer: Buffer): Buffer | null {
-  if (buffer.length < 5 || ![0, 1, 0x80, 0x81].includes(buffer[0])) return buffer;
+  if (!probeFrameHeader(buffer)) return buffer;
 
   let offset = 0;
-  while (offset + 5 <= buffer.length) {
-    const flag = buffer[offset];
-    if (![0, 1, 0x80, 0x81].includes(flag)) return null;
-    const length = buffer.readUInt32BE(offset + 1);
-    const start = offset + 5;
-    const end = start + length;
-    if (end > buffer.length) return null;
-    if ((flag & GRPC_WEB_TRAILER_FLAG) === 0) return buffer.subarray(start, end);
+  while (offset < buffer.length) {
+    const frame = probeFrameHeader(buffer, offset);
+    if (!frame) return null;
+    const end = frame.payloadStart + frame.payloadLength;
+    if ((frame.flag & GRPC_WEB_TRAILER_FLAG) === 0) {
+      return buffer.subarray(frame.payloadStart, end);
+    }
     offset = end;
   }
 

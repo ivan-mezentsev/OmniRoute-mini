@@ -10,8 +10,12 @@ interface Props {
   lastRefreshedAt: Record<string, string | undefined>;
   emailsVisible: boolean;
   providerLabels: Record<string, string>;
+  renderInlineQuotaSummary?: (quota: any) => React.ReactNode;
   onRefresh: (id: string, provider: string) => void;
   onOpenCutoff: (connection: any) => void;
+  onOpenResetCredits?: (id: string, provider: string) => void;
+  loadingResetCreditsId?: string | null;
+  redeemingResetCreditId?: string | null;
 }
 
 export default function QuotaCardGrid({
@@ -24,6 +28,9 @@ export default function QuotaCardGrid({
   providerLabels,
   onRefresh,
   onOpenCutoff,
+  onOpenResetCredits,
+  loadingResetCreditsId,
+  redeemingResetCreditId,
 }: Props) {
   if (connections.length === 0) return null;
 
@@ -58,6 +65,9 @@ export default function QuotaCardGrid({
                 providerLabel={providerLabels[conn.provider] || conn.provider}
                 onRefresh={() => onRefresh(conn.id, conn.provider)}
                 onOpenCutoff={() => onOpenCutoff(conn)}
+                onOpenResetCredits={() => onOpenResetCredits?.(conn.id, conn.provider)}
+                loadingResetCredits={loadingResetCreditsId === conn.id}
+                redeemingResetCredit={redeemingResetCreditId === conn.id}
               />
             ))}
           </div>

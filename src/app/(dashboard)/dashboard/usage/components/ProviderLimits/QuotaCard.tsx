@@ -30,6 +30,9 @@ interface QuotaCardProps {
   providerLabel: string;
   onRefresh: () => void;
   onOpenCutoff: () => void;
+  onOpenResetCredits?: () => void;
+  loadingResetCredits?: boolean;
+  redeemingResetCredit?: boolean;
 }
 
 export default function QuotaCard({
@@ -42,6 +45,9 @@ export default function QuotaCard({
   providerLabel,
   onRefresh,
   onOpenCutoff,
+  onOpenResetCredits,
+  loadingResetCredits = false,
+  redeemingResetCredit = false,
 }: QuotaCardProps) {
   const quotas = quota?.quotas ?? [];
   const cardStatus = useMemo<CardStatus>(() => worstStatus(quotas), [quotas]);
@@ -61,7 +67,9 @@ export default function QuotaCard({
   const hasOverrides = !!overrides && Object.keys(overrides).length > 0;
   const hasStaleData = !!quota?.stale;
   const displayRefreshedAt = quota?.stale?.since || refreshedAt;
-  const canEditCutoff = quotas.some((q: any) => q && typeof q.name === "string" && !q.isCredits);
+  const canEditCutoff = quotas.some(
+    (q: any) => q && typeof q.name === "string" && !q.isCredits && !q.isResetCredits
+  );
 
   return (
     <Card
@@ -90,7 +98,10 @@ export default function QuotaCard({
         hasStaleData={hasStaleData}
         onRefresh={onRefresh}
         onOpenCutoff={onOpenCutoff}
+        onOpenResetCredits={onOpenResetCredits}
         canEditCutoff={canEditCutoff}
+        loadingResetCredits={loadingResetCredits}
+        redeemingResetCredit={redeemingResetCredit}
       />
     </Card>
   );

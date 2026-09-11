@@ -50,6 +50,7 @@ test("providerLimits cache supports single writes, batch writes and deletions", 
         quotas: { remaining: 10 },
         plan: { tier: "team" },
         message: null,
+        bankedResetCredits: 1,
         fetchedAt: "2026-01-01T01:00:00.000Z",
       },
     },
@@ -65,6 +66,7 @@ test("providerLimits cache supports single writes, batch writes and deletions", 
   ]);
 
   assert.equal(inserted, 2);
+  assert.equal(providerLimitsDb.getProviderLimitsCache("conn-2")?.bankedResetCredits, 1);
   assert.equal(Object.keys(providerLimitsDb.getAllProviderLimitsCache()).length, 3);
 
   providerLimitsDb.deleteProviderLimitsCache("conn-2");

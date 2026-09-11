@@ -389,6 +389,25 @@ export function parseQuotaData(provider, data) {
     return [];
   }
 
+  const resetCreditCount = data.bankedResetCredits;
+  if (
+    typeof resetCreditCount === "number" &&
+    Number.isFinite(resetCreditCount) &&
+    resetCreditCount >= 0
+  ) {
+    normalizedQuotas.push({
+      name: "reset_credits",
+      used: 0,
+      total: 0,
+      remaining: resetCreditCount,
+      remainingPercentage: 100,
+      resetAt: null,
+      unlimited: true,
+      isResetCredits: true,
+      creditCount: resetCreditCount,
+    });
+  }
+
   // Sort quotas according to PROVIDER_MODELS order
   const modelOrder = getModelsByProviderId(provider);
   if (modelOrder.length > 0) {

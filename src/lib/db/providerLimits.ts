@@ -22,6 +22,7 @@ export interface ProviderLimitsCacheEntry {
   quotas: JsonRecord | null;
   plan: unknown;
   message: string | null;
+  bankedResetCredits?: number | null;
   fetchedAt: string;
   source?: string | null;
 }
@@ -52,6 +53,9 @@ function normalizeCacheEntry(value: unknown): ProviderLimitsCacheEntry | null {
     quotas: toRecord(record.quotas),
     plan: record.plan ?? null,
     message: typeof record.message === "string" ? record.message : null,
+    ...(typeof record.bankedResetCredits === "number" && Number.isFinite(record.bankedResetCredits)
+      ? { bankedResetCredits: record.bankedResetCredits }
+      : {}),
     fetchedAt,
     source: typeof record.source === "string" ? record.source : null,
   };

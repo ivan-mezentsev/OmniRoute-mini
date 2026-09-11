@@ -19,6 +19,8 @@ import useEmailPrivacyStore from "@/store/emailPrivacyStore";
 import EmailPrivacyToggle from "@/shared/components/EmailPrivacyToggle";
 import QuotaCutoffModal from "./QuotaCutoffModal";
 import QuotaCardGrid from "./QuotaCardGrid";
+import ResetCreditsModal from "./ResetCreditsModal";
+import { useResetCredits } from "./useResetCredits";
 import { translateUsageOrFallback, type UsageTranslationValues } from "./i18nFallback";
 
 const LS_PURCHASE_FILTER = "omniroute:limits:purchaseFilter";
@@ -37,6 +39,7 @@ const PROVIDER_LABEL: Record<string, string> = {
   kiro: "Kiro AI",
   "amazon-q": "Amazon Q",
   codex: "OpenAI Codex",
+  "grok-cli": "Grok Build",
   claude: "Claude Code",
   glm: "GLM (Z.AI)",
   zai: "Z.AI",
@@ -56,19 +59,20 @@ const PROVIDER_ORDER: Record<string, number> = {
   "gemini-cli": 2,
   github: 3,
   codex: 4,
-  claude: 5,
-  kiro: 6,
-  glm: 7,
-  zai: 8,
-  glmt: 9,
-  "opencode-go": 10,
-  "kimi-coding": 11,
-  minimax: 12,
-  "minimax-cn": 13,
-  nanogpt: 14,
+  "grok-cli": 5,
+  claude: 6,
+  kiro: 7,
+  glm: 8,
+  zai: 9,
+  glmt: 10,
+  "opencode-go": 11,
+  "kimi-coding": 12,
+  minimax: 13,
+  "minimax-cn": 14,
+  nanogpt: 15,
 };
 
-const TIER_FILTERS = [
+const TIER_FILTERS: Array<{ key: string; labelKey: string; label?: string }> = [
   { key: "all", labelKey: "tierAll" },
   { key: "enterprise", labelKey: "tierEnterprise" },
   { key: "team", labelKey: "tierTeam" },
@@ -250,6 +254,7 @@ export default function ProviderLimits({
     Record<string, Record<string, number>>
   >({});
   const [globalThresholdDefault, setGlobalThresholdDefault] = useState<number>(98);
+  const resetCredits = useResetCredits(setErrors, setQuotaData, setLastRefreshedAt);
 
   useEffect(() => {
     let alive = true;
@@ -748,7 +753,9 @@ export default function ProviderLimits({
           onClick={refreshAll}
           disabled={refreshingAll}
           className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-bg-subtle border border-border text-text-main text-[13px] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          title={autoRefreshIntervalMs > 0 ? tr("autoRefreshing", "Auto-refreshing") : t("refreshAll")}
+          title={
+            autoRefreshIntervalMs > 0 ? tr("autoRefreshing", "Auto-refreshing") : t("refreshAll")
+          }
         >
           <span
             className={`material-symbols-outlined text-[16px] ${refreshingAll ? "animate-spin" : ""}`}
@@ -759,7 +766,10 @@ export default function ProviderLimits({
             ? tr("refreshing", "Refreshing")
             : autoRefreshIntervalMs > 0
               ? `${tr("autoRefreshing", "Auto-refreshing")} ${formatAutoRefreshCountdown(
-                  Math.max(0, autoRefreshIntervalMs - (autoRefreshClock - lastRefreshAllAtRef.current))
+                  Math.max(
+                    0,
+                    autoRefreshIntervalMs - (autoRefreshClock - lastRefreshAllAtRef.current)
+                  )
                 )}`
               : t("refreshAll")}
         </button>
@@ -930,13 +940,27 @@ export default function ProviderLimits({
           onRefresh={refreshProvider}
           onOpenCutoff={(conn) => {
             const windows = (quotaData[conn.id]?.quotas || []).filter(
-              (q: any) => q && typeof q.name === "string" && !q.isCredits
+              (q: any) => q && typeof q.name === "string" && !q.isCredits && !q.isResetCredits
             );
             setCutoffModalWindows(windows);
             setCutoffModalConn(conn);
           }}
+          onOpenResetCredits={resetCredits.open}
+          loadingResetCreditsId={resetCredits.loadingId}
+          redeemingResetCreditId={resetCredits.redeemingId}
         />
       </div>
+
+      {resetCredits.picker && (
+        <ResetCreditsModal
+          isOpen={true}
+          credits={resetCredits.picker.credits}
+          availableCount={resetCredits.picker.availableCount}
+          loading={resetCredits.redeemingId !== null}
+          onClose={resetCredits.close}
+          onRedeem={resetCredits.redeem}
+        />
+      )}
 
       {cutoffModalConn && (
         <QuotaCutoffModal

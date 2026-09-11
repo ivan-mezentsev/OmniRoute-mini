@@ -28,7 +28,7 @@ type JsonRecord = Record<string, unknown>;
 
 type SyncSource = "manual" | "scheduled";
 
-interface ProviderConnectionLike {
+interface ProviderConnectionLike extends JsonRecord {
   id: string;
   provider: string;
   authType?: string;
@@ -76,6 +76,9 @@ function toProviderLimitsCacheEntry(
     quotas: isRecord(usage.quotas) ? usage.quotas : null,
     plan: usage.plan ?? null,
     message: typeof usage.message === "string" ? usage.message : null,
+    ...(typeof usage.bankedResetCredits === "number" && Number.isFinite(usage.bankedResetCredits)
+      ? { bankedResetCredits: usage.bankedResetCredits }
+      : {}),
     fetchedAt,
     source,
   };
@@ -110,7 +113,7 @@ async function syncToCloudIfEnabled() {
   }
 }
 
-async function refreshAndUpdateCredentials(connection: ProviderConnectionLike) {
+export async function refreshAndUpdateCredentials(connection: ProviderConnectionLike) {
   const executor = getExecutor(connection.provider);
   const credentials = {
     accessToken: connection.accessToken,
@@ -455,6 +458,11 @@ export async function fetchAndPersistProviderLimits(
         quotas: previous.quotas,
         plan: previous.plan ?? usage.plan ?? null,
         message: null,
+        ...(typeof usage.bankedResetCredits === "number"
+          ? { bankedResetCredits: usage.bankedResetCredits }
+          : typeof previous.bankedResetCredits === "number"
+            ? { bankedResetCredits: previous.bankedResetCredits }
+            : {}),
         _stale: true,
         _staleSince: previous.fetchedAt,
         _staleReason: newCache.message,
